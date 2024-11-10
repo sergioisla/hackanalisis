@@ -15,7 +15,7 @@ bbox_merida = 3764086,1034675,3792830,1069982
 t = 5
 gtfs_base = GTFSMerida(gtfs_file)
 
-def calcula_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
+def get_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
     """
     Calcula la correlación entre la oferta de transporte público y la demanda de viajes
     en función de la hora del día.
@@ -40,7 +40,8 @@ def calcula_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
     oferta_zona_hora = stoptimes_zona.groupby(["zona_id", "hora"])["trip_id"].nunique().unstack("hora").fillna(0)
     oferta_demanda = oferta_zona_hora.add_prefix("oferta_")\
         .join(viajes_origen_hora.add_prefix("demanda_"))
-    correlaciones_hora = np.diag(oferta_demanda.corr().filter(like="demanda_").values)
+    corr = np.diag(oferta_demanda.corr().filter(like="demanda_").values)
+    correlaciones_hora = pd.DataFrame(data={"correlacion": corr, "hora": range(len(corr))})
     return correlaciones_hora
 
 def get_poblacion_atendida_from_gtfs(gtfs_obj, t=5):
@@ -92,13 +93,18 @@ def get_waiting_times_gtfs(gtfs_obj, t):
     manzanas_tiempo_promedio = manz[["CVEGEO", "geometry"]].merge(tiempo_promedio_mza, on="CVEGEO")
     return manzanas_tiempo_promedio
 
+if __name__ == "__main__":
+    ouput_folder = f"{datos}/calculos_gtfs"
 
-correlacion_od = calcula_correlacion_gtfs(gtfs_base, zonas_path, od_path)
-print("Correlación entre oferta y demanda:", correlacion_od)
+    correlacion_od_base = get_correlacion_gtfs(gtfs_base, zonas_path, od_path)
+    correlacion_od_base.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_base.csv")
+    print("Correlación entre oferta y demanda:", correlacion_od_base)
 
-manz_rutas_atendidas_base = get_poblacion_atendida_from_gtfs(gtfs_base, t=t)
-pob_atendida_base = manz_rutas_atendidas_base["POBTOT"].sum()
-print(f"Población atendida a {t} minutos: {pob_atendida_base}")
+    manz_rutas_atendidas_base = get_poblacion_atendida_from_gtfs(gtfs_base, t=t)
+    manz_rutas_atendidas_base.to_file(f"{ouput_folder}/manzanas_rutas_atendidas_base.gpkg", driver="GPKG")
+    pob_atendida_base = manz_rutas_atendidas_base["POBTOT"].sum()
+    print(f"Población atendida a {t} minutos: {pob_atendida_base}")
 
-manzanas_tiempo_promedio = get_waiting_times_gtfs(gtfs_base, t)
-print(f"Tiempo promedio de espera en paraderos a {t} minutos", manzanas_tiempo_promedio["mean_time"].mean())
+    manzanas_tiempo_promedio = get_waiting_times_gtfs(gtfs_base, t)
+    manzanas_tiempo_promedio.to_file(f"{ouput_folder}/manzanas_tiempo_promedio_base.gpkg", driver="GPKG")
+    print(f"Tiempo promedio de espera en paraderos a {t} minutos", manzanas_tiempo_promedio["mean_time"].mean())
