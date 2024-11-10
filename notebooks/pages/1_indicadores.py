@@ -43,6 +43,14 @@ pob_atendida_treatment = manzanas_poblacion_atendidas_treatment["POBTOT"].sum()
 tiempo_promedio_base = manzanas_tiempo_promedio_base["mean_time"].mean()
 tiempo_promedio_treatment = manzanas_tiempo_promedio_treatment["mean_time"].mean()
 
+def color_markdown(v):
+    if v < 0:
+        return f':red[{v}]'
+    elif v > 0:
+        return f':green[{v}]'
+    else:
+        return f':blue[{v}]'
+
 st.markdown(
     f"""
     # Indicadores de Impacto
@@ -50,16 +58,19 @@ st.markdown(
     *Simulemos ¿Qué pasaría si introducimos una nueva ruta de transporte público en Mérida?*
 
     Población atendida a {t} minutos:
-    - Base: {pob_atendida_base:,}
-    - Tratamiento: {pob_atendida_treatment:,}
+    - Sin intervención: {pob_atendida_base:,}
+    - Con intervención: {pob_atendida_treatment:,}
+    - Impacto: {color_markdown(pob_atendida_treatment - pob_atendida_base)}
 
-    Tiempo promedio de espera en paraderos a {t} minutos:
-    - Base: {tiempo_promedio_base:.2f}
-    - Tratamiento: {tiempo_promedio_treatment:.2f}
+    Tiempo promedio de espera en paraderos cercanos:
+    - Sin intervención: {tiempo_promedio_base:.2f} minutos
+    - Con intervención: {tiempo_promedio_treatment:.2f} minutos
+    - Impacto: {color_markdown(tiempo_promedio_treatment - tiempo_promedio_base)}
 
     Correlación entre oferta y demanda:
-    - Base: {correlacion_od_base["correlacion"].mean(): .3f}
-    - Tratamiento: {correlacion_od_treatment["correlacion"].mean(): .3f}
+    - Con intervención: {correlacion_od_base["correlacion"].mean(): .3f}
+    - intervención: {correlacion_od_treatment["correlacion"].mean(): .3f}
+    - Impacto: {color_markdown(correlacion_od_treatment["correlacion"].mean() - correlacion_od_base["correlacion"].mean())}
     """
 )
 
@@ -71,6 +82,7 @@ correlacion_od_base.set_index('hora')["correlacion"].plot(ax=ax, label='Base', c
 correlacion_od_treatment.set_index('hora')["correlacion"].plot(ax=ax, label='Tratamiento', color='orange')
 ax.set_ylabel('Correlación')
 ax.set_title('Comparación de Correlación entre Oferta y Demanda')
+ax.legend()
 _ = [sp.set_visible(False) for sp in ax.spines.values()]
 st.pyplot(fig)
 
@@ -98,3 +110,28 @@ st.pyplot(fig)
 
 # Mapa de tiempo promedio de espera
 st.image(f"{imgs_folder}/mapa_tiempo_promedio_espera.png")
+
+# Estadísticas generales del feed
+st.markdown("## Estadísticas generales del feed")
+st.markdown("### Base")
+fts_base = pd.read_csv(f"{input_folder}/feed_time_series_base.csv")
+st.write(fts_base)
+
+st.markdown("### Tratamiento")
+fts_treatment = pd.read_csv(f"{input_folder}/feed_time_series_treatment.csv")
+st.write(fts_treatment)
+
+fts_impacto = fts_treatment.set_index("datetime") - fts_base.set_index("datetime")
+
+def style_negative(v):
+    if v < 0:
+        return 'color:red;'
+    elif v > 0:
+        return 'color:green;'
+    else:
+        return ''
+
+fts_impacto = fts_impacto.style.map(style_negative)
+
+st.markdown("### Impacto")
+st.write(fts_impacto)

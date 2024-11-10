@@ -12,7 +12,9 @@ st.markdown(
 
     ## Introducción
 
-    ## metodología
+    ## Metodología
+
+    ## Extensiones futuras
 
 """
 )

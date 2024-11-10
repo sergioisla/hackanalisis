@@ -8,14 +8,17 @@ datos = "../datos"
 gtfs_file_base = f"{datos}/GTFS/gtfs-merida.zip"
 gtfs_file_treatment = f"{datos}/GTFS/gtfs-merida.zip"
 zonas_path = f"{datos}/od_celular/zonificacion.gpkg"
+path_rutas_base = f"{datos}/rutas_merida_geo/rutas_merida.geojson"
+path_rutas_treatment = f"{datos}/rutas_merida_geo/rutas_merida.geojson"
+path_paradas_base = f"{datos}/rutas_merida_geo/paradas_merida.geojson"
+path_paradas_treatment = f"{datos}/rutas_merida_geo/paradas_merida.geojson"
 od_path = f"{datos}/od_celular/Matriz_OD_Movilidad_Merida.csv"
 isocronas_pob_gpkg = f"{datos}/isocronas_mza_pob_merida_2020.gpkg"
 manzanas_shp = f"{datos}/31_Manzanas_INV2020_shp/INV2020_IND_PVEU_MZA_31.shp"
 bbox_merida = 3764086,1034675,3792830,1069982
 imgs_folder = "images"
 t = 5
-path_rutas = f"{datos}/rutas_merida.geojson"
-path_paradas = f"{datos}/paradas_merida.geojson"
+
 FIG_SIZE = (14, 14)
 
 def get_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
@@ -97,15 +100,19 @@ def get_waiting_times_gtfs(gtfs_obj, t):
 if __name__ == "__main__":
     gtfs_base = GTFSMerida(gtfs_file_base)
     gtfs_treatment = GTFSMerida(gtfs_file_treatment)
+    rutas_base = gpd.read_file(path_rutas_base)
+    rutas_treatment = gpd.read_file(path_rutas_treatment)
+    paradas_base = gpd.read_file(path_paradas_base)
+    paradas_treatment = gpd.read_file(path_paradas_treatment)
     ouput_folder = f"{datos}/calculos_gtfs"
 
-    # Correlación oferta-demanda
-    correlacion_od_base = get_correlacion_gtfs(gtfs_base, zonas_path, od_path)
-    correlacion_od_base.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_base.csv")
-    print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_base.csv")
-    correlacion_od_treatment = get_correlacion_gtfs(gtfs_treatment, zonas_path, od_path)
-    correlacion_od_treatment.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_treatment.csv")
-    print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_treatment.csv")
+    # # Correlación oferta-demanda
+    # correlacion_od_base = get_correlacion_gtfs(gtfs_base, zonas_path, od_path)
+    # correlacion_od_base.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_base.csv")
+    # print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_base.csv")
+    # correlacion_od_treatment = get_correlacion_gtfs(gtfs_treatment, zonas_path, od_path)
+    # correlacion_od_treatment.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_treatment.csv")
+    # print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_treatment.csv")
 
     # Población atendida por manzanas
     manz_rutas_atendidas_base = get_poblacion_atendida_from_gtfs(gtfs_base, t=t)
@@ -118,14 +125,16 @@ if __name__ == "__main__":
     # mapa de población atendida
     fig, (ax1, ax2) = plt.subplots(2, 1)
     manz_rutas_atendidas_base.plot(column='POBTOT', ax=ax1, legend=True, cmap="viridis")
+    rutas_base.plot(ax=ax1, color="red", linewidth=0.5)
     ax1.set_title('Población Atendida (base)')
     ax1.set_axis_off()
 
     manz_rutas_atendidas_treatment.plot(column='POBTOT', ax=ax2, legend=True, cmap="viridis")
     ax2.set_title('Población Atendida (tratamiento)')
     ax2.set_axis_off()
+    rutas_treatment.plot(ax=ax2, color="red", linewidth=0.5)
     fig.set_size_inches(FIG_SIZE)
-    fig.savefig(f"{imgs_folder}/mapa_poblacion_atendida.png", bbox_inches="tight")
+    fig.savefig(f"{imgs_folder}/mapa_poblacion_atendida.png", bbox_inches="tight", dpi=600)
 
 
     # Tiempo promedio de espera en paraderos
@@ -146,21 +155,24 @@ if __name__ == "__main__":
     print(f"Tiempo promedio de espera en paraderos a {t} minutos (treatment)", manzanas_tiempo_promedio_treatment["mean_time"].mean())
 
     # mapas de tiempo promedio de espera
+    MARKER_SIZE = 0.05
     fig, (ax1, ax2) = plt.subplots(2, 1)
     manzanas_tiempo_promedio_base.plot(column='mean_time', ax=ax1, legend=True, cmap="viridis")
+    paradas_base.plot(ax=ax1, color="red", markersize=MARKER_SIZE)
     ax1.set_title('Tiempo Promedio de Espera (base)')
     ax1.set_axis_off()
 
     manzanas_tiempo_promedio_treatment.plot(column='mean_time', ax=ax2, legend=True, cmap="viridis")
+    paradas_treatment.plot(ax=ax2, color="red", markersize=MARKER_SIZE)
     ax2.set_title('Tiempo Promedio de Espera (tratamiento)')
     ax2.set_axis_off()
     fig.set_size_inches(FIG_SIZE)
-    fig.savefig(f"{imgs_folder}/mapa_tiempo_promedio_espera.png", bbox_inches="tight")
+    fig.savefig(f"{imgs_folder}/mapa_tiempo_promedio_espera.png", bbox_inches="tight", dpi=600)
 
-    # feed time series
-    fts_base = gtfs_base.get_feed_ts()
-    fts_base.to_csv(f"{ouput_folder}/feed_time_series_base.csv")
-    print(f"archivo guardado en {ouput_folder}/feed_time_series_base.csv")
-    fts_treatment = gtfs_treatment.get_feed_ts()
-    fts_treatment.to_csv(f"{ouput_folder}/feed_time_series_treatment.csv")
-    print(f"archivo guardado en {ouput_folder}/feed_time_series_treatment.csv")
+    # # feed time series
+    # fts_base = gtfs_base.get_feed_ts()
+    # fts_base.to_csv(f"{ouput_folder}/feed_time_series_base.csv")
+    # print(f"archivo guardado en {ouput_folder}/feed_time_series_base.csv")
+    # fts_treatment = gtfs_treatment.get_feed_ts()
+    # fts_treatment.to_csv(f"{ouput_folder}/feed_time_series_treatment.csv")
+    # print(f"archivo guardado en {ouput_folder}/feed_time_series_treatment.csv")
