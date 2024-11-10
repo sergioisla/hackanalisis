@@ -63,7 +63,10 @@ def get_poblacion_atendida_from_gtfs(gtfs_obj, t=5):
     iso = gpd.read_file(isocronas_pob_gpkg, encoding='utf-8', layer=f"{t}_minutos_pob", columns=['CVEGEO', 'geometry'])
     manz = gpd.read_file(manzanas_shp, encoding='utf-8', bbox=bbox_merida)\
         .to_crs(epsg=4326)
-    manz["POBTOT"] = manz["POBTOT"].astype(int)
+    variables_poblacion = ["POBTOT", "POBFEM", "POB0_14", "P_60YMAS", "P_CD_T"]
+    for v in variables_poblacion:
+        manz[v] = manz[v].str.replace("\D", "0", regex=True).astype(int)
+
 
     mzas_ruta_total = []
     for i in rutas.index:
