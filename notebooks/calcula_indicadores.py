@@ -13,7 +13,6 @@ manzanas_shp = f"{datos}/31_Manzanas_INV2020_shp/INV2020_IND_PVEU_MZA_31.shp"
 bbox_merida = 3764086,1034675,3792830,1069982
 
 t = 5
-gtfs_base = GTFSMerida(gtfs_file)
 
 def get_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
     """
@@ -59,8 +58,6 @@ def get_poblacion_atendida_from_gtfs(gtfs_obj, t=5):
 
     mzas_ruta_total = []
     for i in rutas.index:
-        if (i % 10) == 0:
-            print(f"Procesando ruta {i+1} de {len(rutas)}")
         ruta_i = rutas.loc[i, "geometry"]
         mzas_ruta_iso = iso.loc[iso.intersects(ruta_i), "CVEGEO"].unique().tolist()
         mzas_ruta_total += mzas_ruta_iso
@@ -79,7 +76,7 @@ def get_waiting_times_gtfs(gtfs_obj, t):
     manz["POBTOT"] = manz["POBTOT"].astype(int)
     tiempo_promedio_paradas = stop_times.sort_values(["stop_id", "arrival_time"])\
     .groupby(["stop_id"])\
-    .apply(lambda x: x["arrival_time"].diff().dt.total_seconds().div(60).mean())\
+    .apply(lambda x: x["arrival_time"].diff().dt.total_seconds().div(60).mean(), include_groups=False)\
     .reset_index(name="mean_time")\
     .merge(paradas, on="stop_id")\
     .filter(["stop_id", "mean_time", "geometry"])\
@@ -94,17 +91,36 @@ def get_waiting_times_gtfs(gtfs_obj, t):
     return manzanas_tiempo_promedio
 
 if __name__ == "__main__":
+    gtfs_base = GTFSMerida(gtfs_file)
+    gtfs_treatment = GTFSMerida(gtfs_file)
     ouput_folder = f"{datos}/calculos_gtfs"
 
     correlacion_od_base = get_correlacion_gtfs(gtfs_base, zonas_path, od_path)
     correlacion_od_base.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_base.csv")
-    print("Correlación entre oferta y demanda:", correlacion_od_base)
+    print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_base.csv")
+    correlacion_od_treatment = get_correlacion_gtfs(gtfs_treatment, zonas_path, od_path)
+    correlacion_od_treatment.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_treatment.csv")
+    print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_treatment.csv")
 
     manz_rutas_atendidas_base = get_poblacion_atendida_from_gtfs(gtfs_base, t=t)
     manz_rutas_atendidas_base.to_file(f"{ouput_folder}/manzanas_rutas_atendidas_base.gpkg", driver="GPKG")
-    pob_atendida_base = manz_rutas_atendidas_base["POBTOT"].sum()
-    print(f"Población atendida a {t} minutos: {pob_atendida_base}")
+    print(f"archivo guardado en {ouput_folder}/manzanas_rutas_atendidas_base.gpkg")
+    manz_rutas_atendidas_treatment = get_poblacion_atendida_from_gtfs(gtfs_treatment, t=t)
+    manz_rutas_atendidas_treatment.to_file(f"{ouput_folder}/manzanas_rutas_atendidas_treatment.gpkg", driver="GPKG")
+    print(f"archivo guardado en {ouput_folder}/manzanas_rutas_atendidas_treatment.gpkg")
 
-    manzanas_tiempo_promedio = get_waiting_times_gtfs(gtfs_base, t)
-    manzanas_tiempo_promedio.to_file(f"{ouput_folder}/manzanas_tiempo_promedio_base.gpkg", driver="GPKG")
-    print(f"Tiempo promedio de espera en paraderos a {t} minutos", manzanas_tiempo_promedio["mean_time"].mean())
+    pob_atendida_base = manz_rutas_atendidas_base["POBTOT"].sum()
+    print(f"Población atendida a {t} minutos (base): {pob_atendida_base}")
+    pob_atendida_treatment = manz_rutas_atendidas_treatment["POBTOT"].sum()
+    print(f"Población atendida a {t} minutos (treatment): {pob_atendida_treatment}")
+
+    manzanas_tiempo_promedio_base = get_waiting_times_gtfs(gtfs_base, t)
+    manzanas_tiempo_promedio_base.to_file(f"{ouput_folder}/manzanas_tiempo_promedio_base.gpkg", driver="GPKG")
+    print(f"archivo guardado en {ouput_folder}/manzanas_tiempo_promedio_base.gpkg")
+
+    manzanas_tiempo_promedio_treatment = get_waiting_times_gtfs(gtfs_treatment, t)
+    manzanas_tiempo_promedio_treatment.to_file(f"{ouput_folder}/manzanas_tiempo_promedio_treatment.gpkg", driver="GPKG")
+    print(f"archivo guardado en {ouput_folder}/manzanas_tiempo_promedio_treatment.gpkg")
+
+    print(f"Tiempo promedio de espera en paraderos a {t} minutos (base)", manzanas_tiempo_promedio_base["mean_time"].mean())
+    print(f"Tiempo promedio de espera en paraderos a {t} minutos (treatment)", manzanas_tiempo_promedio_treatment["mean_time"].mean())
