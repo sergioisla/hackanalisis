@@ -16,7 +16,7 @@ class GTFSMerida:
         return stops
 
     def get_stop_times(self):
-        stoptimes = self.feed.stop_times
+        stoptimes = self.feed.stop_times.copy()
         stoptimes["hora"] = stoptimes.departure_time.str[:2].astype(int)
         stoptimes["stop_id"] = stoptimes["stop_id"].astype(int)
         return stoptimes
@@ -25,3 +25,11 @@ class GTFSMerida:
         shapes = self.feed.get_shapes(as_gdf=True).cx[-89.8:-89.5, :].to_crs(epsg=4326)
         shapes["route_id"] = shapes["shape_id"].str.split("D").str[0].astype(int)
         return shapes
+
+    def get_feed_ts(self):
+        dates = self.feed.get_first_week()
+        week = self.feed.get_first_week()
+        dates = [week[5]]  # sábado
+        trip_stats = self.feed.compute_trip_stats()
+        fts = self.feed.compute_feed_time_series(trip_stats, dates, freq='1h')
+        return fts

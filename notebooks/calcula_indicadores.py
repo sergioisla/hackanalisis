@@ -5,16 +5,18 @@ import matplotlib.pyplot as plt
 from gtfs_merida import GTFSMerida
 
 datos = "../datos"
-gtfs_file = f"{datos}/GTFS/gtfs-merida.zip"
+gtfs_file_base = f"{datos}/GTFS/gtfs-merida.zip"
+gtfs_file_treatment = f"{datos}/GTFS/gtfs-merida.zip"
 zonas_path = f"{datos}/od_celular/zonificacion.gpkg"
 od_path = f"{datos}/od_celular/Matriz_OD_Movilidad_Merida.csv"
 isocronas_pob_gpkg = f"{datos}/isocronas_mza_pob_merida_2020.gpkg"
 manzanas_shp = f"{datos}/31_Manzanas_INV2020_shp/INV2020_IND_PVEU_MZA_31.shp"
 bbox_merida = 3764086,1034675,3792830,1069982
-imgs_folder = f"images"
+imgs_folder = "images"
 t = 5
 path_rutas = f"{datos}/rutas_merida.geojson"
 path_paradas = f"{datos}/paradas_merida.geojson"
+FIG_SIZE = (14, 14)
 
 def get_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
     """
@@ -93,8 +95,8 @@ def get_waiting_times_gtfs(gtfs_obj, t):
     return manzanas_tiempo_promedio
 
 if __name__ == "__main__":
-    gtfs_base = GTFSMerida(gtfs_file)
-    gtfs_treatment = GTFSMerida(gtfs_file)
+    gtfs_base = GTFSMerida(gtfs_file_base)
+    gtfs_treatment = GTFSMerida(gtfs_file_treatment)
     ouput_folder = f"{datos}/calculos_gtfs"
 
     # Correlación oferta-demanda
@@ -122,7 +124,8 @@ if __name__ == "__main__":
     manz_rutas_atendidas_treatment.plot(column='POBTOT', ax=ax2, legend=True, cmap="viridis")
     ax2.set_title('Población Atendida (tratamiento)')
     ax2.set_axis_off()
-    fig.savefig(f"{imgs_folder}/mapa_poblacion_atendida.png")
+    fig.set_size_inches(FIG_SIZE)
+    fig.savefig(f"{imgs_folder}/mapa_poblacion_atendida.png", bbox_inches="tight")
 
 
     # Tiempo promedio de espera en paraderos
@@ -151,4 +154,13 @@ if __name__ == "__main__":
     manzanas_tiempo_promedio_treatment.plot(column='mean_time', ax=ax2, legend=True, cmap="viridis")
     ax2.set_title('Tiempo Promedio de Espera (tratamiento)')
     ax2.set_axis_off()
-    fig.savefig(f"{imgs_folder}/mapa_tiempo_promedio_espera.png")
+    fig.set_size_inches(FIG_SIZE)
+    fig.savefig(f"{imgs_folder}/mapa_tiempo_promedio_espera.png", bbox_inches="tight")
+
+    # feed time series
+    fts_base = gtfs_base.get_feed_ts()
+    fts_base.to_csv(f"{ouput_folder}/feed_time_series_base.csv")
+    print(f"archivo guardado en {ouput_folder}/feed_time_series_base.csv")
+    fts_treatment = gtfs_treatment.get_feed_ts()
+    fts_treatment.to_csv(f"{ouput_folder}/feed_time_series_treatment.csv")
+    print(f"archivo guardado en {ouput_folder}/feed_time_series_treatment.csv")
