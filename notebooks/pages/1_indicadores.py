@@ -45,11 +45,11 @@ tiempo_promedio_treatment = manzanas_tiempo_promedio_treatment["mean_time"].mean
 
 def color_markdown(v):
     if v < 0:
-        return f':red[{v}]'
+        return f':red[{v:,}]'
     elif v > 0:
-        return f':green[{v}]'
+        return f':green[{v:,}]'
     else:
-        return f':blue[{v}]'
+        return f':blue[{v:,}]'
 
 st.markdown(
     f"""
@@ -75,28 +75,22 @@ st.markdown(
 )
 
 plt.style.use('seaborn-v0_8-whitegrid')
-# Correlación entre oferta y demanda
-st.markdown("## Comparación de Correlación entre Oferta y Demanda")
-fig, ax = plt.subplots()
-correlacion_od_base.set_index('hora')["correlacion"].plot(ax=ax, label='Base', color='blue')
-correlacion_od_treatment.set_index('hora')["correlacion"].plot(ax=ax, label='Tratamiento', color='orange')
-ax.set_ylabel('Correlación')
-ax.set_title('Comparación de Correlación entre Oferta y Demanda')
-ax.legend()
-_ = [sp.set_visible(False) for sp in ax.spines.values()]
-st.pyplot(fig)
 
-# Población atendida
 st.markdown("## Comparación de Población Atendida con acceso a 5 minutos de distancia")
-fig, ax = plt.subplots()
-ax.bar(['Base', 'Tratamiento'], [pob_atendida_base, pob_atendida_treatment], color=['blue', 'orange'])
-ax.set_ylabel('Población Atendida')
-ax.set_title('Comparación de Población Atendida')
-_ = [sp.set_visible(False) for sp in ax.spines.values()]
-st.pyplot(fig)
 
 # mapa de población atendida
 st.image(f"{imgs_folder}/mapa_poblacion_atendida.png")
+
+# Población atendida
+fig, ax = plt.subplots()
+ax.bar(['Base', 'Tratamiento'], [pob_atendida_base, pob_atendida_treatment], color=['blue', 'orange'])
+ax.set_ylabel('Población atendida')
+ax.set_title('Comparación de población con acceso a transporte público a 5 minutos caminando')
+_ = [sp.set_visible(False) for sp in ax.spines.values()]
+st.pyplot(fig)
+
+# Mapa de tiempo promedio de espera
+st.image(f"{imgs_folder}/mapa_tiempo_promedio_espera.png")
 
 # Tiempo promedio de espera
 st.markdown("## Comparación de Tiempo Promedio de Espera")
@@ -108,8 +102,16 @@ _ = [sp.set_visible(False) for sp in ax.spines.values()]
 
 st.pyplot(fig)
 
-# Mapa de tiempo promedio de espera
-st.image(f"{imgs_folder}/mapa_tiempo_promedio_espera.png")
+# Correlación entre oferta y demanda
+st.markdown("## Comparación de Correlación entre Oferta y Demanda")
+fig, ax = plt.subplots()
+correlacion_od_base.set_index('hora')["correlacion"].plot(ax=ax, label='Base', color='blue')
+correlacion_od_treatment.set_index('hora')["correlacion"].plot(ax=ax, label='Tratamiento', color='orange')
+ax.set_ylabel('Correlación')
+ax.set_title('Comparación de Correlación entre Oferta y Demanda')
+ax.legend()
+_ = [sp.set_visible(False) for sp in ax.spines.values()]
+st.pyplot(fig)
 
 # Estadísticas generales del feed
 st.markdown("## Estadísticas generales del feed")
