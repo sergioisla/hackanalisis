@@ -1,7 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-
+import matplotlib.pyplot as plt
 from gtfs_merida import GTFSMerida
 
 datos = "../datos"
@@ -11,8 +11,10 @@ od_path = f"{datos}/od_celular/Matriz_OD_Movilidad_Merida.csv"
 isocronas_pob_gpkg = f"{datos}/isocronas_mza_pob_merida_2020.gpkg"
 manzanas_shp = f"{datos}/31_Manzanas_INV2020_shp/INV2020_IND_PVEU_MZA_31.shp"
 bbox_merida = 3764086,1034675,3792830,1069982
-
+imgs_folder = f"images"
 t = 5
+path_rutas = f"{datos}/rutas_merida.geojson"
+path_paradas = f"{datos}/paradas_merida.geojson"
 
 def get_correlacion_gtfs(gtfs_obj, zonas_path, od_path):
     """
@@ -95,6 +97,7 @@ if __name__ == "__main__":
     gtfs_treatment = GTFSMerida(gtfs_file)
     ouput_folder = f"{datos}/calculos_gtfs"
 
+    # Correlación oferta-demanda
     correlacion_od_base = get_correlacion_gtfs(gtfs_base, zonas_path, od_path)
     correlacion_od_base.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_base.csv")
     print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_base.csv")
@@ -102,6 +105,7 @@ if __name__ == "__main__":
     correlacion_od_treatment.to_csv(f"{ouput_folder}/correlacion_oferta_demanda_treatment.csv")
     print(f"archivo guardado en {ouput_folder}/correlacion_oferta_demanda_treatment.csv")
 
+    # Población atendida por manzanas
     manz_rutas_atendidas_base = get_poblacion_atendida_from_gtfs(gtfs_base, t=t)
     manz_rutas_atendidas_base.to_file(f"{ouput_folder}/manzanas_rutas_atendidas_base.gpkg", driver="GPKG")
     print(f"archivo guardado en {ouput_folder}/manzanas_rutas_atendidas_base.gpkg")
@@ -109,6 +113,19 @@ if __name__ == "__main__":
     manz_rutas_atendidas_treatment.to_file(f"{ouput_folder}/manzanas_rutas_atendidas_treatment.gpkg", driver="GPKG")
     print(f"archivo guardado en {ouput_folder}/manzanas_rutas_atendidas_treatment.gpkg")
 
+    # mapa de población atendida
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    manz_rutas_atendidas_base.plot(column='POBTOT', ax=ax1, legend=True, cmap="viridis")
+    ax1.set_title('Población Atendida (base)')
+    ax1.set_axis_off()
+
+    manz_rutas_atendidas_treatment.plot(column='POBTOT', ax=ax2, legend=True, cmap="viridis")
+    ax2.set_title('Población Atendida (tratamiento)')
+    ax2.set_axis_off()
+    fig.savefig(f"{imgs_folder}/mapa_poblacion_atendida.png")
+
+
+    # Tiempo promedio de espera en paraderos
     pob_atendida_base = manz_rutas_atendidas_base["POBTOT"].sum()
     print(f"Población atendida a {t} minutos (base): {pob_atendida_base}")
     pob_atendida_treatment = manz_rutas_atendidas_treatment["POBTOT"].sum()
@@ -124,3 +141,14 @@ if __name__ == "__main__":
 
     print(f"Tiempo promedio de espera en paraderos a {t} minutos (base)", manzanas_tiempo_promedio_base["mean_time"].mean())
     print(f"Tiempo promedio de espera en paraderos a {t} minutos (treatment)", manzanas_tiempo_promedio_treatment["mean_time"].mean())
+
+    # mapas de tiempo promedio de espera
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    manzanas_tiempo_promedio_base.plot(column='mean_time', ax=ax1, legend=True, cmap="viridis")
+    ax1.set_title('Tiempo Promedio de Espera (base)')
+    ax1.set_axis_off()
+
+    manzanas_tiempo_promedio_treatment.plot(column='mean_time', ax=ax2, legend=True, cmap="viridis")
+    ax2.set_title('Tiempo Promedio de Espera (tratamiento)')
+    ax2.set_axis_off()
+    fig.savefig(f"{imgs_folder}/mapa_tiempo_promedio_espera.png")
