@@ -21,7 +21,7 @@ class GTFSMerida:
         stoptimes["stop_id"] = stoptimes["stop_id"].astype(int)
         return stoptimes
 
-    def get_shapes(self):
+    def get_rutas(self):
         shapes = self.feed.get_shapes(as_gdf=True).cx[-89.8:-89.5, :].to_crs(epsg=4326)
         shapes["route_id"] = shapes["shape_id"].str.split("D").str[0].astype(int)
         return shapes
